@@ -1,0 +1,8 @@
+{
+  "destination": "/mnt/storage",
+  "timeout": null,
+  "chunks": {
+    "size": 1024,
+    "number": null
+  }
+}
