@@ -1,2 +1,7 @@
 *.class
 *.log
+project
+!project/build.properties
+.bsp
+.idea
+target
