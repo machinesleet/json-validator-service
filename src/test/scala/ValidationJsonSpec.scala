@@ -14,7 +14,6 @@ class ValidationJsonSpec extends AnyFlatSpec with Matchers {
     assert(result.isSuccess)
   }
 
-
   it should "return failure given a file where a required field defined by the schema is missing (source)" in {
     val invalidFileToTest = JsonLoader.fromPath("src/test/resources/invalid-config.json")
 
