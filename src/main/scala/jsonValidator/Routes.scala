@@ -36,6 +36,14 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
       complete(HttpResponse(InternalServerError, entity = s"Unexpected Error: ${e.getMessage}"))
   }
 
+  /**
+   * Route for validating json against a previously uploaded schema.
+   *
+   * Given valid json from the request, strip any keys with null values from the json,
+   * then if a schema exists for the given schema id, check if the request json conforms to the schema.
+   * Return a success response, or an error response with details from the json-validator dependency.
+   * If the request json is invalid, or the schema does not exist return an error response.
+   */
   def validateJson: Route = {
     pathPrefix(validatePrefix) {
       (post & entity(as[String])) { jsonString: String =>
@@ -76,6 +84,12 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
     }
   }
 
+  /**
+   * Route for uploading a schema.
+   *
+   * Given a request containing a valid json schema, write the schema to disk and return a success response.
+   * If the request does not contain a valid schema, return an error response.
+   */
   def uploadSchema: Route = {
     pathPrefix(schemaPrefix) {
       (post & entity(as[String])) { jsonString: String =>
@@ -113,6 +127,13 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
     }
   }
 
+  /**
+   * Route for downloading a schema.
+   *
+   * Check if a schema exists at the given id, if so return the schema as a string.
+   * The schema will already be valid json as uploaded via the upload route.
+   * Use the exception handler to return a schema not found error response.
+   */
   def downloadSchema: Route = {
     pathPrefix(schemaPrefix) {
       get {
@@ -135,9 +156,9 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
 
   /**
    * Utility method to create an Akka HttpResponse from a jsonString and StatusCode
+   *
    * @param jsonString to be used to as the HttpEntity content
    * @param statusCode the status code of the HttpResponse
-   * @return
    */
   private def createHttpResponse(jsonString: String, statusCode: StatusCode): HttpResponse = {
 
