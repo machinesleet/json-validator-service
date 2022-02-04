@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.stream.Materializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.fge.jsonschema.main.JsonSchema
-import model.ActionResponse
+import model.{ActionResponse, ValidationJson}
 import model.ActionResponse._
 import model.ActionResponseProtocol._
 import spray.json.enrichAny
@@ -17,8 +17,10 @@ import scala.util.{Failure, Success}
 class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContextExecutor) {
 
   private val schemaPrefix = "schema"
+  private val validatePrefix = "validate"
 
   val topLevelRoute: Route = concat(
+    validateJson,
     uploadSchema,
     downloadSchema
   )
@@ -27,10 +29,49 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
     case _: java.io.IOException =>
       val actionResponse = ActionResponse(ValidateDocumentAction, "", ErrorStatus, Some(SchemaNotFoundMessage))
       val response = createHttpResponse(actionResponse.toJson.prettyPrint, StatusCodes.NotFound)
-
       complete(response)
     case _: Exception =>
       complete(HttpResponse(InternalServerError, entity = "Unexpected Error fetching schema"))
+  }
+
+  def validateJson: Route = {
+    pathPrefix(validatePrefix) {
+      (post & entity(as[String])) { jsonString: String =>
+        handleExceptions(schemaNotFoundExceptionHandler) {
+          path(Segment) { schemaId =>
+
+            JsonUtils.loadJsonNode(jsonString) match {
+              case Success(jsonNode) =>
+                val validationResponse = validateSuccessPath(schemaId, jsonNode)
+                complete(validationResponse)
+
+              case Failure(exception) =>
+                val actionResponse =
+                  ActionResponse(ValidateDocumentAction, schemaId, ErrorStatus, Some(exception.getMessage))
+
+                val response = createHttpResponse(actionResponse.toJson.prettyPrint, StatusCodes.BadRequest)
+                complete(response)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private def validateSuccessPath(schemaId: String, jsonNode: JsonNode): Future[HttpResponse] = {
+    SchemaIO.loadSchema(schemaPath, schemaId).map { schema =>
+
+      val cleanedJsonNode = JsonUtils.stripNullValues(jsonNode)
+
+      ValidationJson(cleanedJsonNode, schema).isValid match {
+        case Failure(exception) =>
+          val response = ActionResponse(ValidateDocumentAction, schemaId, ErrorStatus, Some(exception.getMessage))
+          createHttpResponse(response.toJson.prettyPrint, StatusCodes.OK)
+        case Success(_) =>
+          val response = ActionResponse(ValidateDocumentAction, schemaId, SuccessStatus)
+          createHttpResponse(response.toJson.prettyPrint, StatusCodes.OK)
+      }
+    }
   }
 
   def uploadSchema: Route = {

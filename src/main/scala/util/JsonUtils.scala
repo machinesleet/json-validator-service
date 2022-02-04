@@ -30,4 +30,8 @@ object JsonUtils {
     }
   }
 
+  def loadJsonNode(jsonString: String) : Try[JsonNode] = {
+    Try(JsonLoader.fromString(jsonString))
+  }
+
 }

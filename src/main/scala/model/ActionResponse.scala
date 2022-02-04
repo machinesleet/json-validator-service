@@ -15,7 +15,6 @@ object ActionResponse {
   val SuccessStatus = "success"
 
   val SchemaNotFoundMessage = "schema not found"
-
 }
 
 object ActionResponseProtocol extends DefaultJsonProtocol {
@@ -52,7 +51,7 @@ object ActionResponseProtocol extends DefaultJsonProtocol {
         case Seq(JsString(action), JsString(id), JsString(status)) =>
           new ActionResponse(action, id, status, None)
         case _ =>
-          throw new DeserializationException("Error deserialising Action response")
+          throw new DeserializationException("Error deserialising Action Response")
       }
     }
   }

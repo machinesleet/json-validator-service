@@ -145,6 +145,117 @@ class JsonValidatorRouteSpec extends AnyFlatSpec
     }
   }
 
+  it should "return a success response when validating a document with null values," +
+    " that conforms to a previously uploaded schema" in {
+
+    val schemaId = "valid-config-schema"
+
+    val jsonToValidate =
+      """{
+        |  "source": "/home/alice/image.iso",
+        |  "destination": "/mnt/storage",
+        |  "timeout": null,
+        |  "chunks": {
+        |    "size": 1024,
+        |    "number": null
+        |  }
+        |}
+        |""".stripMargin
+
+    Post(s"/validate/$schemaId", jsonToValidate) ~> routes.topLevelRoute ~> check {
+      status shouldEqual StatusCodes.OK
+      val response = responseAs[ActionResponse]
+
+      val expectedResponse = ActionResponse(
+        ValidateDocumentAction,
+        schemaId,
+        SuccessStatus,
+        None
+      )
+
+      assert(response == expectedResponse)
+    }
+  }
+
+  it should "return a failure response when validating a document with null values," +
+    " that does not conform to a previously uploaded schema" in {
+
+    // source is missing from jsonString
+    val jsonToValidate =
+      """{
+        |  "destination": "/mnt/storage",
+        |  "timeout": null,
+        |  "chunks": {
+        |    "size": 1024,
+        |    "number": null
+        |  }
+        |}
+        |""".stripMargin
+
+    val expectedErrorMessage =
+      """com.github.fge.jsonschema.core.report.ListProcessingReport: failure
+        |--- BEGIN MESSAGES ---
+        |error: object has missing required properties (["source"])
+        |    level: "error"
+        |    schema: {"loadingURI":"#","pointer":""}
+        |    instance: {"pointer":""}
+        |    domain: "validation"
+        |    keyword: "required"
+        |    required: ["destination","source"]
+        |    missing: ["source"]
+        |---  END MESSAGES  ---
+        |""".stripMargin
+
+    val schemaId = "valid-config-schema"
+
+    Post(s"/validate/$schemaId", jsonToValidate) ~> routes.topLevelRoute ~> check {
+      status shouldEqual StatusCodes.OK
+      val response = responseAs[ActionResponse]
+
+      val expectedResponse = ActionResponse(
+        ValidateDocumentAction,
+        schemaId,
+        ErrorStatus,
+        Some(expectedErrorMessage)
+      )
+
+      assert(response == expectedResponse)
+    }
+  }
+
+  it should "return a not found response given a schemaId that does not exist" in {
+
+    val schemaIdThatDoesNotExist = "pingu"
+
+    val jsonToValidate =
+      """{
+        |  "source": "/home/alice/image.iso",
+        |  "destination": "/mnt/storage",
+        |  "timeout": null,
+        |  "chunks": {
+        |    "size": 1024,
+        |    "number": null
+        |  }
+        |}
+        |""".stripMargin
+
+    Post(s"/validate/$schemaIdThatDoesNotExist", jsonToValidate) ~> routes.topLevelRoute ~> check {
+      status shouldEqual StatusCodes.NotFound
+
+      val response = responseAs[ActionResponse]
+
+      val expectedResponse = ActionResponse(
+        ValidateDocumentAction,
+        "",
+        ErrorStatus,
+        Some(SchemaNotFoundMessage)
+      )
+
+      assert(response == expectedResponse)
+    }
+  }
+
+
   // remove the file we will write to disk a test if it's left over from a previous test run
   override def beforeAll(): Unit = {
     val fileToWrite = new File(s"$schemaPath/$SchemaToWrite.json")
