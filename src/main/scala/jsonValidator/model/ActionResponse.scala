@@ -1,4 +1,4 @@
-package model
+package jsonValidator.model
 
 import spray.json._
 

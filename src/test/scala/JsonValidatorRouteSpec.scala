@@ -4,13 +4,14 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.fge.jackson.JsonLoader
-import model.ActionResponse
+import jsonValidator.model.ActionResponse
 import ActionResponse.{ErrorStatus, SchemaNotFoundMessage, SuccessStatus, UploadSchemaAction, ValidateDocumentAction}
-import model.ActionResponseProtocol._
+import jsonValidator.Routes
+import jsonValidator.model.ActionResponseProtocol._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import util.SchemaIO
+import jsonValidator.util.SchemaIO
 
 import java.io.File
 import scala.concurrent.Await
@@ -95,7 +96,7 @@ class JsonValidatorRouteSpec extends AnyFlatSpec
 
       assert(response == expectedResponse)
 
-      val schemaFromDisk = Await.result(SchemaIO.loadSchema(schemaPath, schemaId), 2.seconds)
+      val schemaFromDisk = Await.result(SchemaIO.loadJsonNode(schemaPath, schemaId), 2.seconds)
 
       assert(schemaFromDisk.toPrettyString == validSchemaString)
     }

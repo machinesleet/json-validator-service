@@ -1,8 +1,8 @@
-package model
+package jsonValidator.model
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.fge.jsonschema.main.{JsonSchema, JsonSchemaFactory}
-import util.JsonUtils
+import jsonValidator.util.JsonUtils
 
 import scala.util.{Failure, Success, Try}
 

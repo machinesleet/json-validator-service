@@ -1,4 +1,4 @@
-package util
+package jsonValidator.util
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.fge.jackson.JsonLoader
@@ -8,7 +8,13 @@ import scala.util.Try
 
 object JsonUtils {
 
-  // not suitable for large nested files as not tail recursive
+  /**
+   * Remove null values from a jsonNode
+   *
+   * @note not suitable for large nested json files as not tail recursive
+   * @param node the JsonNode to remove null values from
+   * @return the JsonNode with null values removed
+   */
   def stripNullValues(node: JsonNode): JsonNode = {
     val nodeElems = node.elements()
 
@@ -22,7 +28,10 @@ object JsonUtils {
     node
   }
 
-  def parseJsonSchema(schemaString: String) : Try[JsonSchema] = {
+  /**
+   * @param schemaString to be loaded in to a JsonNode then parsed as a schema by JsonSchemaFactory
+   */
+  def parseJsonSchema(schemaString: String): Try[JsonSchema] = {
     Try {
       val jsonNode: JsonNode = JsonLoader.fromString(schemaString)
       val factory = JsonSchemaFactory.byDefault()
@@ -30,7 +39,10 @@ object JsonUtils {
     }
   }
 
-  def loadJsonNode(jsonString: String) : Try[JsonNode] = {
+  /**
+   * @param jsonString jsonString to construct a JsonNode from
+   */
+  def loadJsonNode(jsonString: String): Try[JsonNode] = {
     Try(JsonLoader.fromString(jsonString))
   }
 

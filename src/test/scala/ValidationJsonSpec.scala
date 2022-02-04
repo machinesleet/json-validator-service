@@ -1,5 +1,5 @@
 import com.github.fge.jackson.JsonLoader
-import model.ValidationJson
+import jsonValidator.model.ValidationJson
 import org.scalatest.flatspec._
 import org.scalatest.matchers.must.Matchers
 

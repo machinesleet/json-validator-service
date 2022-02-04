@@ -1,7 +1,7 @@
 import com.github.fge.jackson.JsonLoader
 import org.scalatest.flatspec._
 import org.scalatest.matchers.must.Matchers
-import util.JsonUtils
+import jsonValidator.util.JsonUtils
 
 class JsonUtilsSpec  extends  AnyFlatSpec  with Matchers {
 

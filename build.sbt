@@ -9,6 +9,8 @@ lazy val root = project
 
     scalaVersion := "2.13.8",
 
+    Compile / run / mainClass := Some("jsonValidator.JsonValidatorWebService"),
+
     libraryDependencies ++= {
 
       val AkkaVersion = "2.6.8"

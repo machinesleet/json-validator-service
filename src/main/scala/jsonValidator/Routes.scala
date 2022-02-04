@@ -1,3 +1,5 @@
+package jsonValidator
+
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
@@ -5,11 +7,11 @@ import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.stream.Materializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.github.fge.jsonschema.main.JsonSchema
-import model.{ActionResponse, ValidationJson}
-import model.ActionResponse._
-import model.ActionResponseProtocol._
+import jsonValidator.model.ActionResponse._
+import jsonValidator.model.ActionResponseProtocol._
+import jsonValidator.model.{ActionResponse, ValidationJson}
 import spray.json.enrichAny
-import util.{JsonUtils, SchemaIO}
+import jsonValidator.util.{JsonUtils, SchemaIO}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -25,19 +27,19 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
     downloadSchema
   )
 
-  private val schemaNotFoundExceptionHandler = ExceptionHandler {
+  private val exceptionHandler = ExceptionHandler {
     case _: java.io.IOException =>
       val actionResponse = ActionResponse(ValidateDocumentAction, "", ErrorStatus, Some(SchemaNotFoundMessage))
       val response = createHttpResponse(actionResponse.toJson.prettyPrint, StatusCodes.NotFound)
       complete(response)
-    case _: Exception =>
-      complete(HttpResponse(InternalServerError, entity = "Unexpected Error fetching schema"))
+    case e: Exception =>
+      complete(HttpResponse(InternalServerError, entity = s"Unexpected Error: ${e.getMessage}"))
   }
 
   def validateJson: Route = {
     pathPrefix(validatePrefix) {
       (post & entity(as[String])) { jsonString: String =>
-        handleExceptions(schemaNotFoundExceptionHandler) {
+        handleExceptions(exceptionHandler) {
           path(Segment) { schemaId =>
 
             JsonUtils.loadJsonNode(jsonString) match {
@@ -59,7 +61,7 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
   }
 
   private def validateSuccessPath(schemaId: String, jsonNode: JsonNode): Future[HttpResponse] = {
-    SchemaIO.loadSchema(schemaPath, schemaId).map { schema =>
+    SchemaIO.loadJsonNode(schemaPath, schemaId).map { schema =>
 
       val cleanedJsonNode = JsonUtils.stripNullValues(jsonNode)
 
@@ -77,7 +79,7 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
   def uploadSchema: Route = {
     pathPrefix(schemaPrefix) {
       (post & entity(as[String])) { jsonString: String =>
-        handleExceptions(schemaNotFoundExceptionHandler) {
+        handleExceptions(exceptionHandler) {
           path(Segment) { schemaId =>
 
             JsonUtils.parseJsonSchema(jsonString) match {
@@ -114,10 +116,10 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
   def downloadSchema: Route = {
     pathPrefix(schemaPrefix) {
       get {
-        handleExceptions(schemaNotFoundExceptionHandler) {
+        handleExceptions(exceptionHandler) {
           path(Segment) { schemaId =>
 
-            val schema: Future[JsonNode] = SchemaIO.loadSchema(schemaPath, schemaId)
+            val schema: Future[JsonNode] = SchemaIO.loadJsonNode(schemaPath, schemaId)
             val response = schema.map { schemaNode: JsonNode =>
               HttpResponse()
                 .withStatus(StatusCodes.Created)
@@ -131,6 +133,12 @@ class Routes(schemaPath: String)(implicit mat: Materializer, e: ExecutionContext
     }
   }
 
+  /**
+   * Utility method to create an Akka HttpResponse from a jsonString and StatusCode
+   * @param jsonString to be used to as the HttpEntity content
+   * @param statusCode the status code of the HttpResponse
+   * @return
+   */
   private def createHttpResponse(jsonString: String, statusCode: StatusCode): HttpResponse = {
 
     val entity = HttpEntity(ContentTypes.`application/json`, jsonString)
