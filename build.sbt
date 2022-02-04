@@ -24,6 +24,7 @@ lazy val root = project
         "org.scalatest" %% "scalatest" % "3.2.10" % "test",
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % "test",
         "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % "test",
+        "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion
       )
     }
   )

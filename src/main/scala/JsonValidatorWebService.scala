@@ -10,7 +10,9 @@ object JsonValidatorWebService {
     implicit val system: ActorSystem = ActorSystem()
     implicit val executionContextExecutor: ExecutionContextExecutor = system.dispatcher
 
-    val routes = new Routes()
+    val schemaFolderName = "schemas"
+    val schemaPath = getClass.getResource(s"/$schemaFolderName").getPath
+    val routes = new Routes(schemaPath)
 
     val port = 8080
     val host = "localhost"

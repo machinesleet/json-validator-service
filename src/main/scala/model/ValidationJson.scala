@@ -23,3 +23,4 @@ case class ValidationJson(json: JsonNode, schema: JsonNode) {
       }
   }
 }
+
